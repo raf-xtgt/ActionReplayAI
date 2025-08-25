@@ -1,3 +1,7 @@
 documentation
 backend/webservice_venv
 backend/knowledge_base/crawler
+backend/knowledge_base/markdowns/prop_sales_case_studies
+backend/knowledge_base/markdowns/sales_case_studies
+backend/knowledge_base/markdowns/sales_strategies
+backend/knowledge_base/markdowns/about.md
