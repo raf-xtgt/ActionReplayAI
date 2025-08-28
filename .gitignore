@@ -5,3 +5,6 @@ backend/knowledge_base/markdowns/prop_sales_case_studies
 backend/knowledge_base/markdowns/sales_case_studies
 backend/knowledge_base/markdowns/sales_strategies
 backend/knowledge_base/markdowns/about.md
+backend/knowledge_base/data_generator/test_md
+backend/knowledge_base/data_generator/schema.json
+backend/.env
