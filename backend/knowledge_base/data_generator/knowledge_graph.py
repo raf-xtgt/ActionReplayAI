@@ -53,9 +53,9 @@ class DatabaseEntity(Base):
     __tablename__ = "entities"
     
     id = Column(Integer, primary_key=True)
-    entity_id = Column(String(36), nullable=False, unique=True)
-    name = Column(String(512))
-    type = Column(String(50))  # ClientProfile, Objection, Strategy, Technique, Outcome
+    entity_id = Column(String(1024), nullable=False)
+    name = Column(String(1024))
+    type = Column(String(1024))  # ClientProfile, Objection, Strategy, Technique, Outcome
     description = Column(Text)
     properties = Column(JSON)  # Additional properties as JSON
 
@@ -65,11 +65,23 @@ class DatabaseRelationship(Base):
     id = Column(Integer, primary_key=True)
     source_entity_id = Column(Integer, ForeignKey("entities.id"))
     target_entity_id = Column(Integer, ForeignKey("entities.id"))
-    relationship_type = Column(String(50))
+    relationship_type = Column(String(1024))
     properties = Column(JSON)  # Additional properties as JSON
     
     source_entity = relationship("DatabaseEntity", foreign_keys=[source_entity_id])
     target_entity = relationship("DatabaseEntity", foreign_keys=[target_entity_id])
+
+
+class SalesKnowledge(Base):
+    __tablename__ = 'sales_knowledge'
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    profile_id = Column(String(1024), nullable=False)
+    client_profile = Column(JSON)
+    objections = Column(JSON)
+    source_files = Column(JSON)
+    llm_metadata = Column(JSON)
+    created_at = Column(DateTime, default=datetime.now)
 
 def build_knowledge_graph():
     """Build knowledge graph from data in sales_knowledge table"""
@@ -83,10 +95,12 @@ def build_knowledge_graph():
     
     # Fetch all sales knowledge records
     sales_records = session.query(SalesKnowledge).all()
-    
+    print("total sales records", len(sales_records))
+
     entity_map = {}  # Map of entity_id to DatabaseEntity id
     relationship_count = 0
-    
+    processed_count = 0
+
     for record in sales_records:
         # Create client profile entity
         client_profile = record.client_profile
@@ -105,7 +119,7 @@ def build_knowledge_graph():
         for objection in record.objections:
             # Create objection entity
             objection_entity = DatabaseEntity(
-                entity_id=objection['id'],
+                entity_id=objection['obj_id'],
                 name=f"Objection: {objection['desc'][:50]}...",
                 type="Objection",
                 description=objection['desc'],
@@ -113,12 +127,12 @@ def build_knowledge_graph():
             )
             session.add(objection_entity)
             session.flush()
-            entity_map[objection['id']] = objection_entity.id
+            entity_map[objection['obj_id']] = objection_entity.id
             
             # Create relationship: ClientProfile -[HAS_OBJECTION]-> Objection
             rel = DatabaseRelationship(
                 source_entity_id=entity_map[record.profile_id],
-                target_entity_id=entity_map[objection['id']],
+                target_entity_id=entity_map[objection['obj_id']],
                 relationship_type="HAS_OBJECTION",
                 properties={"priority": objection['priority']}
             )
@@ -129,7 +143,7 @@ def build_knowledge_graph():
             for strategy in objection['addressing_strategies']:
                 # Create strategy entity
                 strategy_entity = DatabaseEntity(
-                    entity_id=strategy['id'],
+                    entity_id=strategy['strat_id'],
                     name=f"Strategy: {strategy['desc'][:50]}...",
                     type="Strategy",
                     description=strategy['desc'],
@@ -137,12 +151,12 @@ def build_knowledge_graph():
                 )
                 session.add(strategy_entity)
                 session.flush()
-                entity_map[strategy['id']] = strategy_entity.id
+                entity_map[strategy['strat_id']] = strategy_entity.id
                 
                 # Create relationship: Objection -[ADDRESSED_BY]-> Strategy
                 rel = DatabaseRelationship(
-                    source_entity_id=entity_map[objection['id']],
-                    target_entity_id=entity_map[strategy['id']],
+                    source_entity_id=entity_map[objection['obj_id']],
+                    target_entity_id=entity_map[strategy['strat_id']],
                     relationship_type="ADDRESSED_BY"
                 )
                 session.add(rel)
@@ -152,7 +166,7 @@ def build_knowledge_graph():
                 for technique in strategy['techniques']:
                     # Create technique entity
                     technique_entity = DatabaseEntity(
-                        entity_id=technique['id'],
+                        entity_id=technique['tehcn_id'],
                         name=f"Technique: {technique['desc'][:50]}...",
                         type="Technique",
                         description=technique['desc'],
@@ -160,12 +174,12 @@ def build_knowledge_graph():
                     )
                     session.add(technique_entity)
                     session.flush()
-                    entity_map[technique['id']] = technique_entity.id
+                    entity_map[technique['tehcn_id']] = technique_entity.id
                     
                     # Create relationship: Strategy -[USES]-> Technique
                     rel = DatabaseRelationship(
-                        source_entity_id=entity_map[strategy['id']],
-                        target_entity_id=entity_map[technique['id']],
+                        source_entity_id=entity_map[strategy['strat_id']],
+                        target_entity_id=entity_map[technique['tehcn_id']],
                         relationship_type="USES"
                     )
                     session.add(rel)
@@ -174,7 +188,7 @@ def build_knowledge_graph():
                     # Process outcome
                     outcome = technique['outcome']
                     outcome_entity = DatabaseEntity(
-                        entity_id=outcome['id'],
+                        entity_id=outcome['techn_ot_id'],
                         name=f"Outcome: {outcome['desc'][:50]}...",
                         type="Outcome",
                         description=outcome['desc'],
@@ -182,17 +196,19 @@ def build_knowledge_graph():
                     )
                     session.add(outcome_entity)
                     session.flush()
-                    entity_map[outcome['id']] = outcome_entity.id
+                    entity_map[outcome['techn_ot_id']] = outcome_entity.id
                     
                     # Create relationship: Technique -[RESULTS_IN]-> Outcome
                     rel = DatabaseRelationship(
-                        source_entity_id=entity_map[technique['id']],
-                        target_entity_id=entity_map[outcome['id']],
+                        source_entity_id=entity_map[technique['tehcn_id']],
+                        target_entity_id=entity_map[outcome['techn_ot_id']],
                         relationship_type="RESULTS_IN"
                     )
                     session.add(rel)
                     relationship_count += 1
     
+        processed_count += 1
+        print(f"Processed records {processed_count}/62\n")
     try:
         session.commit()
         print(f"Built knowledge graph with {len(entity_map)} entities and {relationship_count} relationships")
@@ -201,6 +217,23 @@ def build_knowledge_graph():
         print(f"Database error: {str(e)}")
     finally:
         session.close()
+
+
+def check_knowledge_graph():
+    """Build knowledge graph from data in sales_knowledge table"""
+    # Set up database connections
+    engine = create_engine(get_db_url())
+    Session = sessionmaker(bind=engine)
+    session = Session()
+    
+    # Create knowledge graph tables if they don't exist
+    Base.metadata.create_all(engine)
+    
+    # Fetch all sales knowledge records
+    sales_records = session.query(SalesKnowledge).all()
+    print("total sales records", len(sales_records))
+    
+
 
 if __name__ == "__main__":
     build_knowledge_graph()
