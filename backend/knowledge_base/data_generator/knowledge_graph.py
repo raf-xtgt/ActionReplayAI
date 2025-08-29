@@ -29,7 +29,8 @@ from sqlalchemy.orm import relationship, Session, sessionmaker, declarative_base
 from tidb_vector.sqlalchemy import VectorType
 from sqlalchemy.exc import SQLAlchemyError
 from dotenv import load_dotenv
-
+from pyvis.network import Network
+import webbrowser
 load_dotenv()
 
 # Use the same get_db_url function
@@ -218,29 +219,55 @@ def build_knowledge_graph():
     finally:
         session.close()
 
-
-def check_knowledge_graph():
-    """Build knowledge graph from data in sales_knowledge table"""
-    # Set up database connections
+def visualize_knowledge_graph():
+    """Visualize the knowledge graph using PyVis"""
     engine = create_engine(get_db_url())
     Session = sessionmaker(bind=engine)
     session = Session()
-    
-    # Create knowledge graph tables if they don't exist
-    Base.metadata.create_all(engine)
-    
-    # Fetch all sales knowledge records
-    sales_records = session.query(SalesKnowledge).all()
-    print("total sales records", len(sales_records))
-    
 
+    # Fetch all entities and relationships
+    entities = session.query(DatabaseEntity).all()
+    relationships = session.query(DatabaseRelationship).all()
+
+    # Create network
+    net = Network(notebook=False, height="750px", width="100%", bgcolor="#222222", font_color="white")
+    net.force_atlas_2based()
+
+    # Add entities as nodes
+    for entity in entities:
+        net.add_node(
+            entity.id,
+            label=entity.name,
+            title=f"{entity.type}: {entity.description}",
+            color=get_color_for_type(entity.type)
+        )
+
+    # Add relationships as edges
+    for rel in relationships:
+        net.add_edge(
+            rel.source_entity_id,
+            rel.target_entity_id,
+            label=rel.relationship_type,
+            title=rel.relationship_type
+        )
+
+    # Generate and open HTML
+    filename = "knowledge_graph.html"
+    net.save_graph(filename)
+    webbrowser.open(f"file://{os.path.abspath(filename)}")
+    session.close()
+
+def get_color_for_type(entity_type):
+    """Assign colors based on entity type"""
+    colors = {
+        "ClientProfile": "#FF6B6B",
+        "Objection": "#4ECDC4",
+        "Strategy": "#45B7D1",
+        "Technique": "#96CEB4",
+        "Outcome": "#FFEAA7"
+    }
+    return colors.get(entity_type, "#999999")
 
 if __name__ == "__main__":
-    build_knowledge_graph()
-
-#       anon_63.md
-#   anon_34.md
-#   anon_32.md
-#   anon_25.md
-#   anon_23.md
-#   anon_16.md
+    # build_knowledge_graph()
+    visualize_knowledge_graph()

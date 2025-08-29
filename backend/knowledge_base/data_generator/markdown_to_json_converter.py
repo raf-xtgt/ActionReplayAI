@@ -91,7 +91,7 @@ class SalesKnowledge(Base):
     __tablename__ = 'sales_knowledge'
     
     id = Column(Integer, primary_key=True, autoincrement=True)
-    profile_id = Column(String(36), nullable=False)
+    profile_id = Column(String(1024), nullable=False)
     client_profile = Column(JSON)
     objections = Column(JSON)
     source_files = Column(JSON)
@@ -117,6 +117,7 @@ def process_markdown_files(markdown_dir: str):
     session = Session()
     
     processed_count = 0
+    total_files = len(os.listdir(markdown_dir))
     
     for filename in os.listdir(markdown_dir):
         if not filename.endswith('.md'):
@@ -146,13 +147,14 @@ def process_markdown_files(markdown_dir: str):
             # print("sales_knowledge", sales_knowledge)
             session.add(sales_knowledge)
             processed_count += 1
-            print(f"Processing {filename} done\n")
+            print(f"Processing {filename} done - {processed_count}/{total_files}")
             session.commit()
             
         except Exception as e:
             print(f"Error processing {filename}: {str(e)}")
             session.rollback()
-    
+        print("\n")
+
     try:
         print(f"Successfully processed {processed_count} files")
     except SQLAlchemyError as e:
@@ -164,6 +166,6 @@ def process_markdown_files(markdown_dir: str):
     return processed_count
 
 if __name__ == "__main__":
-    markdown_dir = "../markdowns/sales_case_studies"
+    markdown_dir = "../markdowns/sales_strategies"
     count = process_markdown_files(markdown_dir)
     print(f"Processed {count} files")
