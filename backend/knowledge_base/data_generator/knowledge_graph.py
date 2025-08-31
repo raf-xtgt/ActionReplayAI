@@ -54,9 +54,9 @@ class DatabaseEntity(Base):
     __tablename__ = "entities"
     
     id = Column(Integer, primary_key=True)
-    entity_id = Column(String(1024), nullable=False)
-    name = Column(String(1024))
-    type = Column(String(1024))  # ClientProfile, Objection, Strategy, Technique, Outcome
+    entity_id = Column(String(4096), nullable=False)
+    name = Column(String(4096))
+    type = Column(String(4096))  # ClientProfile, Objection, Strategy, Technique, Outcome
     description = Column(Text)
     properties = Column(JSON)  # Additional properties as JSON
 
@@ -66,7 +66,7 @@ class DatabaseRelationship(Base):
     id = Column(Integer, primary_key=True)
     source_entity_id = Column(Integer, ForeignKey("entities.id"))
     target_entity_id = Column(Integer, ForeignKey("entities.id"))
-    relationship_type = Column(String(1024))
+    relationship_type = Column(String(4096))
     properties = Column(JSON)  # Additional properties as JSON
     
     source_entity = relationship("DatabaseEntity", foreign_keys=[source_entity_id])
@@ -77,7 +77,7 @@ class SalesKnowledge(Base):
     __tablename__ = 'sales_knowledge'
     
     id = Column(Integer, primary_key=True, autoincrement=True)
-    profile_id = Column(String(1024), nullable=False)
+    profile_id = Column(String(4096), nullable=False)
     client_profile = Column(JSON)
     objections = Column(JSON)
     source_files = Column(JSON)
@@ -96,7 +96,8 @@ def build_knowledge_graph():
     
     # Fetch all sales knowledge records
     sales_records = session.query(SalesKnowledge).all()
-    print("total sales records", len(sales_records))
+    total_sales_count = len(sales_records)
+    print("total sales records", total_sales_count)
 
     entity_map = {}  # Map of entity_id to DatabaseEntity id
     relationship_count = 0
@@ -209,7 +210,7 @@ def build_knowledge_graph():
                     relationship_count += 1
     
         processed_count += 1
-        print(f"Processed records {processed_count}/62\n")
+        print(f"Processed records {processed_count}/{total_sales_count}\n")
     try:
         session.commit()
         print(f"Built knowledge graph with {len(entity_map)} entities and {relationship_count} relationships")
@@ -269,5 +270,5 @@ def get_color_for_type(entity_type):
     return colors.get(entity_type, "#999999")
 
 if __name__ == "__main__":
-    # build_knowledge_graph()
-    visualize_knowledge_graph()
+    build_knowledge_graph()
+    # visualize_knowledge_graph()
