@@ -285,4 +285,4 @@ def get_color_for_type(entity_type):
 
 if __name__ == "__main__":
     build_knowledge_graph()
-    # visualize_knowledge_graph()
+    visualize_knowledge_graph()

@@ -6,6 +6,18 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_socketio import SocketIO, emit
 from flask_cors import CORS
 from controller import *
+from config.tidb_config import (
+    engine, Base, SessionLocal, session_cache
+)
+from model.data_model import (
+    ClientProfileResponse,
+    ConversationRound,
+    CoachAnalysis
+)
+from model.context_model import (
+    coach_agent
+)
+import dspy
 
 load_dotenv()
 
@@ -24,7 +36,9 @@ socketio = SocketIO(app,
                    engineio_logger=True)
 
 app.register_blueprint(msg_bp, url_prefix='/api/msg')
-            
+
+coach_lm = dspy.LM("ollama_chat/deepseek-r1:latest", api_base="http://localhost:11434")
+dspy.settings.configure(lm=coach_lm)            
 
 @app.route('/test', methods=['POST'])
 def test():
