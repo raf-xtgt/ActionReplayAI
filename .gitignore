@@ -14,3 +14,4 @@ backend/agentic/
 backend/api/config/__pycache__
 backend/api/model/__pycache__
 backend/api/util/__pycache__
+backend/api/agent/__pycache__
