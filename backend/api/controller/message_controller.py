@@ -11,6 +11,7 @@ from model.data_model import (
 from model.context_model import (
     coach_agent
 )
+from agent import (ClientAgent)
 from util.knowledge_graph import ( DatabaseEntity, DatabaseRelationship, get_query_embedding )
 from util.db_service import ( get_client_objections, get_client_profile )
 from sqlalchemy import (
@@ -55,13 +56,13 @@ def get_client_profiles():
 @msg_bp.route('/client_profile/<client_profile_id>', methods=['GET'])
 def retrieve_client_profile(client_profile_id):
     """Get specific client profile by ID"""
-    return get_client_profile(client_profile_id)
+    return jsonify(get_client_profile(client_profile_id))
 
 
 @msg_bp.route('/client_profile/objections/<client_profile_id>', methods=['GET'])
 def retrieve_client_profile_objections(client_profile_id):
     """Get client profile objections by ID"""
-    return get_client_objections(client_profile_id)
+    return jsonify(get_client_objections(client_profile_id)) 
 
 @msg_bp.route('/start_session', methods=['POST'])
 def start_session():
@@ -124,3 +125,25 @@ def start_session():
             "session_id": session_id,
             "first_objection": first_objection.description if first_objection else "No objections found"
         })
+
+
+
+@msg_bp.route('/start_session_v2', methods=['POST'])
+def start_session_v2():
+    """Start a new session with selected client profile"""
+    data = request.json
+    client_profile_id = data['client_profile_id']
+    
+    # Initialize the agent
+    client_agent = ClientAgent()
+
+    # First turn - no user response yet
+    client_message = client_agent(client_profile_id)
+    print("client_message", client_message)
+    # Second turn - pass user response
+    # user_response = "Our solution automates the contact discovery process, reducing time spent by 80%"
+    # client_message = client_agent.forward("nexumora-time-consuming-process", user_response)
+        
+    return jsonify({
+        "client_agent_response": client_message
+    })

@@ -35,12 +35,12 @@ def get_client_profile(client_profile_id):
         if not profile:
             return jsonify({"error": "Client profile not found"}), 404
         
-        return jsonify({
+        return {
             "id": profile.entity_id,
             "name": profile.name,
             "description": profile.description,
             "properties": profile.properties  # Include additional properties if needed
-        })
+        }
 
 def get_client_objections(client_profile_id):
     with SessionLocal() as session:
@@ -82,8 +82,8 @@ def get_client_objections(client_profile_id):
         bm25_objs = [obj.description for obj in bm25_results]
         related_objs = list(set(em_objs + bm25_objs))
                
-        return jsonify({
+        return {
             "client_objections": objection_descriptions,
             "related_objections": related_objs
-        })
+        }
 
