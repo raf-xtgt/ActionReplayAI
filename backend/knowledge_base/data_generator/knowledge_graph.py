@@ -58,6 +58,7 @@ class DatabaseEntity(Base):
     name = Column(String(4096))
     type = Column(String(4096))  # ClientProfile, Objection, Strategy, Technique, Outcome
     description = Column(Text)
+    description_vec = Column(VectorType())
     properties = Column(JSON)  # Additional properties as JSON
 
 class DatabaseRelationship(Base):
@@ -83,6 +84,14 @@ class SalesKnowledge(Base):
     source_files = Column(JSON)
     llm_metadata = Column(JSON)
     created_at = Column(DateTime, default=datetime.now)
+
+
+def get_query_embedding(query: str):
+    """
+    Generate embedding using Ollama's nomic-embed-text model.
+    """
+    response = ollama.embeddings(model='nomic-embed-text', prompt=query)
+    return response['embedding']
 
 def build_knowledge_graph():
     """Build knowledge graph from data in sales_knowledge table"""
@@ -111,6 +120,7 @@ def build_knowledge_graph():
             name=client_profile.get('name', 'Unknown'),
             type="ClientProfile",
             description=client_profile.get('desc', ''),
+            description_vec = get_query_embedding(client_profile.get('desc', '')),
             properties=client_profile
         )
         session.add(client_entity)
@@ -125,6 +135,7 @@ def build_knowledge_graph():
                 name=f"Objection: {objection['desc'][:50]}...",
                 type="Objection",
                 description=objection['desc'],
+                description_vec = get_query_embedding(objection['desc']),
                 properties=objection
             )
             session.add(objection_entity)
@@ -149,6 +160,7 @@ def build_knowledge_graph():
                     name=f"Strategy: {strategy['desc'][:50]}...",
                     type="Strategy",
                     description=strategy['desc'],
+                    description_vec = get_query_embedding(strategy['desc']),
                     properties=strategy
                 )
                 session.add(strategy_entity)
@@ -172,6 +184,7 @@ def build_knowledge_graph():
                         name=f"Technique: {technique['desc'][:50]}...",
                         type="Technique",
                         description=technique['desc'],
+                        description_vec = get_query_embedding(technique['desc']),
                         properties=technique
                     )
                     session.add(technique_entity)
@@ -194,6 +207,7 @@ def build_knowledge_graph():
                         name=f"Outcome: {outcome['desc'][:50]}...",
                         type="Outcome",
                         description=outcome['desc'],
+                        description_vec = get_query_embedding(outcome['desc']),
                         properties=outcome
                     )
                     session.add(outcome_entity)
