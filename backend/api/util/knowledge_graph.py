@@ -15,7 +15,7 @@ from sqlalchemy import (
     inspect
 )
 from config.tidb_config import (
-    engine, Base, SessionLocal, session_cache
+    engine, Base, SessionLocal
 )
 from tidb_vector.sqlalchemy import VectorType
 from sqlalchemy.orm import relationship

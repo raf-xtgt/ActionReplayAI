@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request, Response
 import json
 from config.tidb_config import (
-    engine, Base, SessionLocal, session_cache
+    engine, Base, SessionLocal
 )
 from model.data_model import (
     ClientProfileResponse,
@@ -32,39 +32,10 @@ from sqlalchemy import (
 )
 import uuid
 
-msg_bp = Blueprint('msg_bp', __name__)
+session_bp = Blueprint('session_bp', __name__)
+session_cache = {}
 
-@msg_bp.route('/send', methods=['POST'])
-def send_msg():
-    print("send message endpoint")
-
-
-@msg_bp.route('/client_profiles', methods=['GET'])
-def get_client_profiles():
-    """Get all available client profiles"""
-    with SessionLocal() as session:
-        profiles = session.query(DatabaseEntity).filter(
-            DatabaseEntity.type == "ClientProfile"
-        ).all()
-        
-        return jsonify([{
-            "id": profile.entity_id,
-            "name": profile.name,
-            "description": profile.description
-        } for profile in profiles])
-
-@msg_bp.route('/client_profile/<client_profile_id>', methods=['GET'])
-def retrieve_client_profile(client_profile_id):
-    """Get specific client profile by ID"""
-    return jsonify(get_client_profile(client_profile_id))
-
-
-@msg_bp.route('/client_profile/objections/<client_profile_id>', methods=['GET'])
-def retrieve_client_profile_objections(client_profile_id):
-    """Get client profile objections by ID"""
-    return jsonify(get_client_objections(client_profile_id)) 
-
-@msg_bp.route('/start_session', methods=['POST'])
+@session_bp.route('/start_session', methods=['POST'])
 def start_session():
     """Start a new session with selected client profile"""
     data = request.json
@@ -128,7 +99,7 @@ def start_session():
 
 
 
-@msg_bp.route('/start_session_v2', methods=['POST'])
+@session_bp.route('/start_session_v2', methods=['POST'])
 def start_session_v2():
     """Start a new session with selected client profile"""
     data = request.json
@@ -144,6 +115,53 @@ def start_session_v2():
     # user_response = "Our solution automates the contact discovery process, reducing time spent by 80%"
     # client_message = client_agent.forward("nexumora-time-consuming-process", user_response)
         
+    # Create session cache
+    session_id = str(uuid.uuid4())
+    session_cache[session_id] = {
+        "client_profile": client_profile_id,
+        "objections": [obj.entity_id for obj in objections],
+        "embedding_cache": [obj.entity_id for obj in embedding_results],
+        "bm25_cache": [obj.entity_id for obj in bm25_results],
+        "conversation": [],
+        "round_count": 0
+    }
+
     return jsonify({
+        "session_id": session_cache,
         "client_agent_response": client_message
+    })
+
+
+@session_bp.route('/msg', methods=['POST'])
+def handle_conversation():
+    """Handle conversation round"""
+    data = request.json
+    session_id = data['session_id']
+    user_response = data['user_response']
+    
+    if session_id not in session_cache:
+        return jsonify({"error": "Session not found"}), 404
+    
+    session_data = session_cache[session_id]
+    
+    # Add to conversation history
+    session_data["conversation"].append({
+        "role": "user",
+        "content": user_response
+    })
+    
+    # Get coach analysis
+    analysis = get_coach_analysis(session_data)
+    
+    # Get next objection or continue conversation
+    next_objection = get_next_objection(session_data)
+    
+    # Update session cache every 3 rounds
+    session_data["round_count"] += 1
+    if session_data["round_count"] % 3 == 0:
+        update_session_cache(session_data)
+    
+    return jsonify({
+        "next_objection": next_objection,
+        "coach_analysis": analysis.dict()
     })

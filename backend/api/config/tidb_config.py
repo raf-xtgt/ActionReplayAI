@@ -36,4 +36,3 @@ engine = create_engine(get_db_url(), pool_recycle=300)
 Base = declarative_base()
 Base.metadata.create_all(engine)
 SessionLocal = sessionmaker(bind=engine)
-session_cache = {}

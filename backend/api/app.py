@@ -7,7 +7,7 @@ from flask_socketio import SocketIO, emit
 from flask_cors import CORS
 from controller import *
 from config.tidb_config import (
-    engine, Base, SessionLocal, session_cache
+    engine, Base, SessionLocal
 )
 from model.data_model import (
     ClientProfileResponse,
@@ -35,7 +35,8 @@ socketio = SocketIO(app,
                    logger=True,
                    engineio_logger=True)
 
-app.register_blueprint(msg_bp, url_prefix='/api/msg')
+app.register_blueprint(client_profile_bp, url_prefix='/api/client_profile')
+app.register_blueprint(session_bp, url_prefix='/api/msg')
 
 coach_lm = dspy.LM("ollama_chat/deepseek-r1:latest", api_base="http://localhost:11434")
 dspy.settings.configure(lm=coach_lm)            
