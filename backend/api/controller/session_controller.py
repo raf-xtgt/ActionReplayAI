@@ -112,18 +112,15 @@ def start_session_v2():
     # First turn - no user response yet
     client_agent_context = client_agent(client_agent_context)
     print("client_agent_context after:::", json.dumps(client_agent_context, indent=2, default=str) )
-    # Second turn - pass user response
-    # user_response = "Our solution automates the contact discovery process, reducing time spent by 80%"
-    # client_message = client_agent.forward("nexumora-time-consuming-process", user_response)
-        
+   
     # Create session cache
     session_id = str(uuid.uuid4())
-    # session_cache = SessionCacheModel()
-    # session_cache.session_id = session_id
-    # session_cache.client_agent_context = client_agent_context
-    # session_cache.round_count = 0
-
-    # print("session_cache:::", json.dumps(session_cache, indent=2, default=str) )
+    session_cache = SessionCacheModel(
+        session_id=session_id, 
+        client_agent_context=client_agent_context,
+        round_count=0
+    )
+    print("session_cache:::", json.dumps(session_cache, indent=2, default=str) )
 
     return jsonify({
         "session_id": session_id,
