@@ -14,9 +14,6 @@ from model.data_model import (
     ConversationRound,
     CoachAnalysis
 )
-from model.context_model import (
-    coach_agent
-)
 import dspy
 
 load_dotenv()
@@ -36,7 +33,7 @@ socketio = SocketIO(app,
                    engineio_logger=True)
 
 app.register_blueprint(client_profile_bp, url_prefix='/api/client_profile')
-app.register_blueprint(session_bp, url_prefix='/api/msg')
+app.register_blueprint(session_bp, url_prefix='/api/session')
 
 coach_lm = dspy.LM("ollama_chat/deepseek-r1:latest", api_base="http://localhost:11434")
 dspy.settings.configure(lm=coach_lm)            

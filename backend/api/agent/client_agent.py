@@ -5,6 +5,7 @@ import json
 import re
 import os
 from util.db_service import (get_client_profile, get_client_objections)
+from model.context_model import ( ClientAgentContextModel )
 import os
 from dotenv import load_dotenv
 import signal
@@ -37,13 +38,6 @@ client_lm = dspy.LM(
 )
 dspy.configure(lm=client_lm)
 
-class ContextModel(BaseModel):
-    profile_desc: str
-    current_objection: str
-    all_objections: List[str]  # list of all client objections
-    related_objections: List[str]  # objections not raised but related
-    conversation_history: Optional[List[Dict]] = None
-
 class ClientAgentContext(dspy.Signature):
     """
     You are a demanding customer dealing with a salesman. Your role is to simulate a real client 
@@ -57,7 +51,7 @@ class ClientAgentContext(dspy.Signature):
     5. Be authentic and challenging - don't concede easily
     6. Keep responses concise (1-2 sentences typically)
     """
-    context: ContextModel = dspy.InputField(desc="Context about the client profile and objections")
+    context: ClientAgentContextModel = dspy.InputField(desc="Context about the client profile and objections")
     output: str = dspy.OutputField(desc="Your response as the client")
 
 class ClientAgent(dspy.Module):
@@ -65,51 +59,27 @@ class ClientAgent(dspy.Module):
         self.agent_output = dspy.Predict(ClientAgentContext)
         self.conversation_history = []
 
-    def forward(self, client_profile_id, user_response=None):
-        
+    def forward(self, client_agent_context: ClientAgentContextModel, user_response=None):
+        output = ""
         # If this is a subsequent turn, add user response to history
         if user_response:
-            self.conversation_history.append({"role": "salesman", "content": user_response})
-            
-        context = self.construct_profile_desc(client_profile_id)
-        print("Context", json.dumps(context, indent=2, default=str) )
-            
-        print("prediction start")
-        try:
-            with timeout(45):  # This should interrupt if stuck
-                output = self.agent_output(context=context)
-                print("Output", output)
-        except TimeoutError as e:
-            print(f"Prediction timed out: {e}")
-            return "I'm still thinking about your offer. This is taking longer than expected."  # fallback
-        except Exception as e:
-            print(f"Error during prediction: {e}")
-            return "Something went wrong in our discussion."
-        # Add client response to history
-        self.conversation_history.append({"role": "client", "content": output.output})
-            
-        return output.output
+            self.conversation_history.append({"role": "user", "content": user_response})
+            self.update_context(context)
+        else:
+            print("prediction start")
+            try:
+                with timeout(45):  # This should interrupt if stuck
+                    output = self.agent_output(context=client_agent_context)
+                    print("Output", output)
+            except TimeoutError as e:
+                print(f"Prediction timed out: {e}")
+                return "I'm still thinking about your offer. This is taking longer than expected."  # fallback
+            except Exception as e:
+                print(f"Error during prediction: {e}")
+                return "Something went wrong in our discussion."
+            # Add client response to history
+            self.conversation_history.append({"role": "client_agent", "content": output.output})
+            client_agent_context.conversation_history = self.conversation_history.copy()
+            client_agent_context.latest_client_response = output.output
+            return client_agent_context
    
-
-    def construct_profile_desc(self, client_profile_id):
-        client_profile = get_client_profile(client_profile_id)
-        print("Client Profile", json.dumps(client_profile, indent=2, default=str) )
-        objections = get_client_objections(client_profile_id)
-        print("Client Objections", json.dumps(objections, indent=2, default=str) )
-
-        
-        # Get the next objection to raise (cycle through them)
-        current_objection_idx = len(self.conversation_history) // 2  # Each round has client + user messages
-        if current_objection_idx >= len(objections["client_objections"]):
-            current_objection_idx = len(objections["client_objections"]) - 1  # Stay on last objection
-        
-        current_objection = objections["client_objections"][current_objection_idx] if objections["client_objections"] else "No specific objection"
-        
-        context_model = ContextModel(
-            profile_desc=client_profile["description"], 
-            current_objection=current_objection,
-            all_objections=objections["client_objections"],
-            related_objections=objections["related_objections"],
-            conversation_history=self.conversation_history.copy()
-        )
-        return context_model

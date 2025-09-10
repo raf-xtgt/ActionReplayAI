@@ -8,12 +8,11 @@ from model.data_model import (
     ConversationRound,
     CoachAnalysis
 )
-from model.context_model import (
-    coach_agent
-)
+from util.session_service import ( update_session_cache )
+from util.db_service import (get_client_profile, get_client_objections)
+from model.context_model import ( ClientAgentContextModel, SessionCacheModel )
 from agent import (ClientAgent)
 from util.knowledge_graph import ( DatabaseEntity, DatabaseRelationship, get_query_embedding )
-from util.db_service import ( get_client_objections, get_client_profile )
 from sqlalchemy import (
     Column,
     Integer,
@@ -33,7 +32,7 @@ from sqlalchemy import (
 import uuid
 
 session_bp = Blueprint('session_bp', __name__)
-session_cache = {}
+# session_cache = {}
 
 @session_bp.route('/start_session', methods=['POST'])
 def start_session():
@@ -99,38 +98,61 @@ def start_session():
 
 
 
-@session_bp.route('/start_session_v2', methods=['POST'])
+@session_bp.route('/session-init', methods=['POST'])
 def start_session_v2():
     """Start a new session with selected client profile"""
     data = request.json
     client_profile_id = data['client_profile_id']
-    
+    client_agent_context = construct_client_agent_context(client_profile_id, [])
+    print("client_agent_context before:::", json.dumps(client_agent_context, indent=2, default=str) )
+
     # Initialize the agent
     client_agent = ClientAgent()
 
     # First turn - no user response yet
-    client_message = client_agent(client_profile_id)
-    print("client_message", client_message)
+    client_agent_context = client_agent(client_agent_context)
+    print("client_agent_context after:::", json.dumps(client_agent_context, indent=2, default=str) )
     # Second turn - pass user response
     # user_response = "Our solution automates the contact discovery process, reducing time spent by 80%"
     # client_message = client_agent.forward("nexumora-time-consuming-process", user_response)
         
     # Create session cache
     session_id = str(uuid.uuid4())
-    session_cache[session_id] = {
-        "client_profile": client_profile_id,
-        "objections": [obj.entity_id for obj in objections],
-        "embedding_cache": [obj.entity_id for obj in embedding_results],
-        "bm25_cache": [obj.entity_id for obj in bm25_results],
-        "conversation": [],
-        "round_count": 0
-    }
+    # session_cache = SessionCacheModel()
+    # session_cache.session_id = session_id
+    # session_cache.client_agent_context = client_agent_context
+    # session_cache.round_count = 0
+
+    # print("session_cache:::", json.dumps(session_cache, indent=2, default=str) )
 
     return jsonify({
-        "session_id": session_cache,
-        "client_agent_response": client_message
+        "session_id": session_id,
+        "client_agent_response": client_agent_context.latest_client_response
     })
 
+def construct_client_agent_context(client_profile_id, conversation_history):
+    client_profile = get_client_profile(client_profile_id)
+    print("Client Profile", json.dumps(client_profile, indent=2, default=str) )
+    objections = get_client_objections(client_profile_id)
+    print("Client Objections", json.dumps(objections, indent=2, default=str) )
+
+        
+    # Get the next objection to raise (cycle through them)
+    current_objection_idx = len(conversation_history) // 2  # Each round has client + user messages
+    if current_objection_idx >= len(objections["client_objections"]):
+        current_objection_idx = len(objections["client_objections"]) - 1  # Stay on last objection
+        
+    current_objection = objections["client_objections"][current_objection_idx] if objections["client_objections"] else "No specific objection"
+        
+    context_model = ClientAgentContextModel(
+        profile_desc=client_profile["description"], 
+        current_objection=current_objection,
+        all_objections=objections["client_objections"],
+        related_objections=objections["related_objections"],
+        conversation_history=conversation_history,
+        latest_client_response=""
+    )
+    return context_model
 
 @session_bp.route('/msg', methods=['POST'])
 def handle_conversation():
