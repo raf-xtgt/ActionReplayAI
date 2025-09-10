@@ -17,11 +17,12 @@ from sqlalchemy import (
 from config.tidb_config import (
     engine, Base, SessionLocal
 )
+from model.context_model import (SessionModel, ClientAgentContextModel)
 from tidb_vector.sqlalchemy import VectorType
 from sqlalchemy.orm import relationship
 import ollama
 from flask import jsonify
-from .knowledge_graph import ( DatabaseEntity, DatabaseRelationship, get_query_embedding )
+from .knowledge_graph import ( DatabaseEntity, DatabaseRelationship, DatabaseSession, get_query_embedding )
 from typing import Optional, Dict, List
 
 
@@ -46,3 +47,35 @@ def update_session_cache(session_data: dict):
             )
         ).limit(20).all()
         session_data["bm25_cache"] = [obj.entity_id for obj in new_bm25_results]
+
+def create_new_session(session_model: SessionModel):
+    print("create new session")
+    with SessionLocal() as session:
+        session_entity = DatabaseSession(
+            guid=session_model.session_id,
+            client_agent_context=session_model.client_agent_context.dict(),
+            round_count = session_model.round_count
+        )
+        session.add(session_entity)
+        session.commit()
+
+def get_session_by_id(session_id: str):
+    print("get session by id")
+    with SessionLocal() as session:
+        session_entity = session.query(DatabaseSession).filter(
+            DatabaseSession.guid == session_id
+        ).first()
+
+        if not session_entity:
+            return None
+
+        # Convert client_agent_context JSON -> ClientAgentContextModel
+        client_context = ClientAgentContextModel(**session_entity.client_agent_context)
+
+        # Build SessionModel
+        return SessionModel(
+            session_id=session_entity.guid,
+            client_agent_context=client_context,
+            round_count=session_entity.round_count
+        )
+        

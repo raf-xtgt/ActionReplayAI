@@ -12,7 +12,8 @@ from sqlalchemy import (
     create_engine,
     or_,
     and_,
-    inspect
+    inspect,
+    func
 )
 from config.tidb_config import (
     engine, Base, SessionLocal
@@ -43,6 +44,14 @@ class DatabaseRelationship(Base):
     
     source_entity = relationship("DatabaseEntity", foreign_keys=[source_entity_id])
     target_entity = relationship("DatabaseEntity", foreign_keys=[target_entity_id])
+
+class DatabaseSession(Base):
+    __tablename__ = "sessions"
+    
+    guid = Column(String(255), primary_key=True) 
+    client_agent_context = Column(JSON, nullable=True) 
+    round_count = Column(Integer, default=0)
+    created_date = Column(DateTime, server_default=func.now())  
 
 def get_query_embedding(query: str):
     """

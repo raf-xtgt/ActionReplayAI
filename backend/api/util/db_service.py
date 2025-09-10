@@ -14,9 +14,7 @@ from sqlalchemy import (
     and_,
     inspect
 )
-from config.tidb_config import (
-    engine, Base, SessionLocal
-)
+from config.tidb_config import (SessionLocal)
 from tidb_vector.sqlalchemy import VectorType
 from sqlalchemy.orm import relationship
 import ollama

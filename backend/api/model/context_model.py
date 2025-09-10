@@ -9,11 +9,9 @@ class ClientAgentContextModel(BaseModel):
     all_objections: List[str]  # list of all client objections
     related_objections: List[str]  # objections not raised but related
     conversation_history: Optional[List[Dict]] = None
-    latest_client_response: Optional[str]
 
 
-
-class SessionCacheModel(BaseModel):
+class SessionModel(BaseModel):
     session_id: str
     client_agent_context: ClientAgentContextModel
     round_count:int

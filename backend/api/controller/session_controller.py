@@ -8,9 +8,9 @@ from model.data_model import (
     ConversationRound,
     CoachAnalysis
 )
-from util.session_service import ( update_session_cache )
+from util.session_service import ( update_session_cache, create_new_session, get_session_by_id )
 from util.db_service import (get_client_profile, get_client_objections)
-from model.context_model import ( ClientAgentContextModel, SessionCacheModel )
+from model.context_model import ( ClientAgentContextModel, SessionModel )
 from agent import (ClientAgent)
 from util.knowledge_graph import ( DatabaseEntity, DatabaseRelationship, get_query_embedding )
 from sqlalchemy import (
@@ -104,27 +104,26 @@ def start_session_v2():
     data = request.json
     client_profile_id = data['client_profile_id']
     client_agent_context = construct_client_agent_context(client_profile_id, [])
-    print("client_agent_context before:::", json.dumps(client_agent_context, indent=2, default=str) )
 
     # Initialize the agent
     client_agent = ClientAgent()
 
     # First turn - no user response yet
     client_agent_context = client_agent(client_agent_context)
-    print("client_agent_context after:::", json.dumps(client_agent_context, indent=2, default=str) )
    
     # Create session cache
     session_id = str(uuid.uuid4())
-    session_cache = SessionCacheModel(
+    session = SessionModel(
         session_id=session_id, 
         client_agent_context=client_agent_context,
         round_count=0
     )
-    print("session_cache:::", json.dumps(session_cache, indent=2, default=str) )
-
+    create_new_session(session)
+    print("Session created successfully")
+    lates_client_response_idx = len(client_agent_context.conversation_history) - 1
     return jsonify({
         "session_id": session_id,
-        "client_agent_response": client_agent_context.latest_client_response
+        "client_agent_response": client_agent_context.conversation_history[lates_client_response_idx]
     })
 
 def construct_client_agent_context(client_profile_id, conversation_history):
@@ -146,12 +145,11 @@ def construct_client_agent_context(client_profile_id, conversation_history):
         current_objection=current_objection,
         all_objections=objections["client_objections"],
         related_objections=objections["related_objections"],
-        conversation_history=conversation_history,
-        latest_client_response=""
+        conversation_history=conversation_history
     )
     return context_model
 
-@session_bp.route('/msg', methods=['POST'])
+@session_bp.route('/conversation', methods=['POST'])
 def handle_conversation():
     """Handle conversation round"""
     data = request.json
@@ -183,4 +181,31 @@ def handle_conversation():
     return jsonify({
         "next_objection": next_objection,
         "coach_analysis": analysis.dict()
+    })
+
+@session_bp.route('/user-msg', methods=['POST'])
+def handle_msg():
+    """Handle conversation round"""
+    data = request.json
+    session_id = data['session_id']
+    user_response = data['user_response']
+    
+    if not session_id:
+        return jsonify({"error": "Session not found"}), 404
+    
+    session_data = get_session_by_id(session_id)
+    print("retrieved session data:::", json.dumps(session_data, indent=2, default=str) )
+
+    client_agent_context = session_data.client_agent_context
+    client_agent_context.conversation_history.append({"role": "salesman", "content": user_response})
+    client_agent = ClientAgent()
+    # Trigger client agent
+    client_agent_context = client_agent(client_agent_context)
+    print("client_agent_context after:::", json.dumps(client_agent_context, indent=2, default=str) )
+   
+    # round 
+
+    
+    return jsonify({
+        "session_id": session_id,
     })

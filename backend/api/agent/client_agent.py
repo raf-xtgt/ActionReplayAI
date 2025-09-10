@@ -51,7 +51,7 @@ class ClientAgentContext(dspy.Signature):
     5. Be authentic and challenging - don't concede easily
     6. Keep responses concise (1-2 sentences typically)
     """
-    context: ClientAgentContextModel = dspy.InputField(desc="Context about the client profile and objections")
+    context: ClientAgentContextModel = dspy.InputField(desc="Context about the client profile, objections and conversation history")
     output: str = dspy.OutputField(desc="Your response as the client")
 
 class ClientAgent(dspy.Module):
@@ -59,27 +59,20 @@ class ClientAgent(dspy.Module):
         self.agent_output = dspy.Predict(ClientAgentContext)
         self.conversation_history = []
 
-    def forward(self, client_agent_context: ClientAgentContextModel, user_response=None):
+    def forward(self, client_agent_context: ClientAgentContextModel):
         output = ""
-        # If this is a subsequent turn, add user response to history
-        if user_response:
-            self.conversation_history.append({"role": "user", "content": user_response})
-            self.update_context(context)
-        else:
-            print("prediction start")
-            try:
-                with timeout(45):  # This should interrupt if stuck
-                    output = self.agent_output(context=client_agent_context)
-                    print("Output", output)
-            except TimeoutError as e:
-                print(f"Prediction timed out: {e}")
-                return "I'm still thinking about your offer. This is taking longer than expected."  # fallback
-            except Exception as e:
-                print(f"Error during prediction: {e}")
-                return "Something went wrong in our discussion."
-            # Add client response to history
-            self.conversation_history.append({"role": "client_agent", "content": output.output})
-            client_agent_context.conversation_history = self.conversation_history.copy()
-            client_agent_context.latest_client_response = output.output
-            return client_agent_context
+        print("prediction start")
+        try:
+            with timeout(45):  # This should interrupt if stuck
+                output = self.agent_output(context=client_agent_context)
+                print("Client agent response", output.output)
+        except TimeoutError as e:
+            print(f"Prediction timed out: {e}")
+            return "I'm still thinking about your offer. This is taking longer than expected."  # fallback
+        except Exception as e:
+            print(f"Error during prediction: {e}")
+            return "Something went wrong in our discussion."
+        # Add client response to history
+        client_agent_context.conversation_history.append({"role": "client_agent", "content": output.output})
+        return client_agent_context
    
