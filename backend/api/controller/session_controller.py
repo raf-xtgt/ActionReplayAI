@@ -109,7 +109,7 @@ def start_session_v2():
     client_agent = ClientAgent()
 
     # First turn - no user response yet
-    client_agent_context = client_agent(client_agent_context)
+    client_agent_context = client_agent.forward(client_agent_context)
    
     # Create session cache
     session_id = str(uuid.uuid4())
@@ -200,7 +200,7 @@ def handle_msg():
     client_agent_context.conversation_history.append({"role": "salesman", "content": user_response})
     client_agent = ClientAgent()
     # Trigger client agent
-    client_agent_context = client_agent(client_agent_context)
+    client_agent_context = client_agent.forward(client_agent_context)
     print("client_agent_context after:::", json.dumps(client_agent_context, indent=2, default=str) )
    
     # round 
