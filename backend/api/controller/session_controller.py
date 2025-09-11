@@ -204,8 +204,10 @@ def handle_msg():
     print("client_agent_context after:::", json.dumps(client_agent_context, indent=2, default=str) )
    
     # round 
+    lates_client_response_idx = len(client_agent_context.conversation_history) - 1
 
     
     return jsonify({
         "session_id": session_id,
+        "client_agent_response": client_agent_context.conversation_history[lates_client_response_idx]
     })
