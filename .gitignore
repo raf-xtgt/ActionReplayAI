@@ -16,3 +16,4 @@ backend/api/model/__pycache__
 backend/api/util/__pycache__
 backend/api/agent/__pycache__
 backend/api/agent/prompt/__pycache__
+backend/api/agent/prompt/__pycache__/agent_base_prompts.cpython-311.pyc

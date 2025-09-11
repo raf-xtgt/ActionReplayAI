@@ -11,7 +11,7 @@ from model.data_model import (
 from util.session_service import ( update_session_cache, create_new_session, get_session_by_id, update_session_by_id )
 from util.db_service import (get_client_profile, get_client_objections)
 from model.context_model import ( ClientAgentContextModel, SessionModel )
-from agent import (ClientAgent)
+from agent import (ClientAgent, CoachAgent)
 from util.knowledge_graph import ( DatabaseEntity, DatabaseRelationship, get_query_embedding )
 from sqlalchemy import (
     Column,
@@ -208,8 +208,15 @@ def handle_msg():
     # round 
     lates_client_response_idx = len(client_agent_context.conversation_history) - 1
 
-    
+    # Trigger coach agent
+    coach_agent = CoachAgent()
+    client_response_classification = coach_agent.forward(client_agent_context)
+
+
+
+
     return jsonify({
         "session_id": session_id,
-        "client_agent_response": client_agent_context.conversation_history[lates_client_response_idx]
+        "client_agent_response": client_agent_context.conversation_history[lates_client_response_idx],
+        "client_response_classification": client_response_classification
     })

@@ -23,7 +23,7 @@ def get_client_agent_prompt(client_agent_context: ClientAgentContextModel):
 
 def get_coach_agent_classification_prompt(client_agent_context: ClientAgentContextModel):
     latest_sales_man_response = get_latest_salesman_response(client_agent_context.conversation_history)
-    base_prompt = f""" 
+    coach_agent_classification_prompt = f""" 
     Role: You are an expert sales coach analyzing a trainee's response to a client's objection. Your first task is to classify the nature of the trainee's latest response.
 
     Task: Analyze the provided "Current Conversation Context" and determine if the "User's Latest Response" is a substantive answer to the client's objection or a minor utterance.
@@ -44,6 +44,7 @@ def get_coach_agent_classification_prompt(client_agent_context: ClientAgentConte
     User's Latest Response to Analyze:
     {latest_sales_man_response}
     """
+    return coach_agent_classification_prompt
 
 def get_latest_salesman_response(conversation_history):
     # Traverse backwards to find the most recent salesman response
