@@ -7,25 +7,9 @@ from dotenv import load_dotenv
 import requests
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 from .prompt import (get_client_agent_prompt)
+from util.inference_service import ( get_llm_output )
 
 load_dotenv()
-
-
-def get_llm_output(client_agent_prompt: str) -> str:
-    response = requests.post(
-        "https://api.moonshot.ai/v1/chat/completions",
-        headers={
-            "Authorization": f"Bearer {os.getenv('KIMI_API_KEY')}"
-        },
-        json={
-            "model": "moonshot-v1-32k",
-            "messages": [
-                {"role": "system", "content": client_agent_prompt}
-            ]
-        }
-    )
-    response.raise_for_status()  # Raise an exception for bad status codes
-    return response.json()["choices"][0]["message"]["content"]
 
 class ClientAgent:
     def __init__(self):

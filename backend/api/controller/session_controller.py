@@ -8,7 +8,7 @@ from model.data_model import (
     ConversationRound,
     CoachAnalysis
 )
-from util.session_service import ( update_session_cache, create_new_session, get_session_by_id )
+from util.session_service import ( update_session_cache, create_new_session, get_session_by_id, update_session_by_id )
 from util.db_service import (get_client_profile, get_client_objections)
 from model.context_model import ( ClientAgentContextModel, SessionModel )
 from agent import (ClientAgent)
@@ -202,7 +202,9 @@ def handle_msg():
     # Trigger client agent
     client_agent_context = client_agent.forward(client_agent_context)
     print("client_agent_context after:::", json.dumps(client_agent_context, indent=2, default=str) )
-   
+    session_data.client_agent_context = client_agent_context
+    session_data.round_count += 1
+    update_session_by_id(session_id, session_data)
     # round 
     lates_client_response_idx = len(client_agent_context.conversation_history) - 1
 

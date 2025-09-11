@@ -78,4 +78,23 @@ def get_session_by_id(session_id: str):
             client_agent_context=client_context,
             round_count=session_entity.round_count
         )
+
+def update_session_by_id(session_id: str, updatedSession: SessionModel):
+    print(f"update session by id: {session_id}")
+    with SessionLocal() as session:
+        # Find the session by ID
+        session_entity = session.query(DatabaseSession).filter(
+            DatabaseSession.guid == session_id
+        ).first()
+
+        if not session_entity:
+            print(f"Session with id {session_id} not found")
+            return False
+
+
+        session_entity.client_agent_context = updatedSession.client_agent_context.dict()
+        session_entity.round_count = updatedSession.round_count
         
+        session.commit()
+        print(f"Session {session_id} updated successfully")
+        return True
