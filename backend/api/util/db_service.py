@@ -183,7 +183,7 @@ def get_strategies(query_text):
         return unique_strategies
 
 def get_solutions(unique_strategies):
-    solution_analysis = CoachAgentSolutionAnalysis()
+    solution_analysis = CoachAgentSolutionAnalysis(analysis=[])
     with SessionLocal() as session:
         for strategy in unique_strategies.values():
             # Find techniques for the strategy
