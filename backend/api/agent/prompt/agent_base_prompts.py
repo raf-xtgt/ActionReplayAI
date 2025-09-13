@@ -76,7 +76,7 @@ def get_coach_agent_behavioral_cue_prompt(client_agent_context: ClientAgentConte
         4.Limit your output to a maximum of 3 cues. Select the most impactful and relevant ones.
 
         5.Output Format: You MUST output a valid, parsable JSON object matching the exact structure below.
-        ```
+        
         {
             "behavioral_cues": [
                 {
@@ -87,7 +87,7 @@ def get_coach_agent_behavioral_cue_prompt(client_agent_context: ClientAgentConte
                 }
             ]
         }
-        ```
+        
     """
     context_prompt = f"""\n 
     Conversation History for Analysis:
@@ -96,6 +96,8 @@ def get_coach_agent_behavioral_cue_prompt(client_agent_context: ClientAgentConte
     Current Session Context:
     Client Profile: {client_agent_context.profile_desc}
     Core Objection: {client_agent_context.current_objection}
+
+    Output only the formatted json.
     """
 
     coach_agent_behavioral_cue_prompt = base_prompt + context_prompt
@@ -127,7 +129,7 @@ def get_coach_agent_risk_prompt(client_agent_context: ClientAgentContextModel):
             Low impact: Minor issues that might be easily resolved but still need attention.
 
         5.Output Format: You MUST output a valid, parsable JSON object matching the exact structure below.
-        ```
+        
         {
             "risks": [
                 {
@@ -137,7 +139,7 @@ def get_coach_agent_risk_prompt(client_agent_context: ClientAgentContextModel):
                 }
             ]
         }
-        ```
+        
     """
     context_prompt = f"""\n 
     Context:

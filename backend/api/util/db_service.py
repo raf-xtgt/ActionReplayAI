@@ -158,57 +158,59 @@ def get_solutions_to_objections(analysis: CoachAgentProblemAnalysis):
         return solutions
 
 def get_strategies(query_text):
-    # Embedding search
-    embedding = get_query_embedding(query_text)
-    embedding_results = session.query(DatabaseEntity).filter(
-        DatabaseEntity.type == 'Strategy'
-    ).order_by(
-        DatabaseEntity.description_vec.cosine_distance(embedding)
-    ).limit(10).all()
-        
-    # BM25 search
-    bm25_results = session.query(DatabaseEntity).filter(
-        and_(
-            DatabaseEntity.type == 'Strategy',
-            or_(
-                DatabaseEntity.description.contains(term) for term in query_text.split()
+    with SessionLocal() as session:
+        # Embedding search
+        embedding = get_query_embedding(query_text)
+        embedding_results = session.query(DatabaseEntity).filter(
+            DatabaseEntity.type == 'Strategy'
+        ).order_by(
+            DatabaseEntity.description_vec.cosine_distance(embedding)
+        ).limit(10).all()
+            
+        # BM25 search
+        bm25_results = session.query(DatabaseEntity).filter(
+            and_(
+                DatabaseEntity.type == 'Strategy',
+                or_(
+                    DatabaseEntity.description.contains(term) for term in query_text.split()
+                )
             )
-        )
-    ).limit(10).all()
-        
-    # Combine and deduplicate strategies
-    unique_strategies = {s.id: s for s in embedding_results}
-    unique_strategies.update({s.id: s for s in bm25_results})
-    return unique_strategies
+        ).limit(10).all()
+            
+        # Combine and deduplicate strategies
+        unique_strategies = {s.id: s for s in embedding_results}
+        unique_strategies.update({s.id: s for s in bm25_results})
+        return unique_strategies
 
 def get_solutions(unique_strategies):
-    solution_analysis = CoachAgentSolutionAnalysis
-    for strategy in unique_strategies.values():
-        # Find techniques for the strategy
-        techniques = session.query(DatabaseEntity).join(
-            DatabaseRelationship,
-            DatabaseRelationship.target_entity_id == DatabaseEntity.id
-        ).filter(
-            DatabaseRelationship.source_entity_id == strategy.id,
-            DatabaseRelationship.relationship_type == "USES"
-        ).all()
-            
-        for technique in techniques:
-            # Find outcomes for the technique
-            outcomes = session.query(DatabaseEntity).join(
+    solution_analysis = CoachAgentSolutionAnalysis()
+    with SessionLocal() as session:
+        for strategy in unique_strategies.values():
+            # Find techniques for the strategy
+            techniques = session.query(DatabaseEntity).join(
                 DatabaseRelationship,
                 DatabaseRelationship.target_entity_id == DatabaseEntity.id
             ).filter(
-                DatabaseRelationship.source_entity_id == technique.id,
-                DatabaseRelationship.relationship_type == "RESULTS_IN"
+                DatabaseRelationship.source_entity_id == strategy.id,
+                DatabaseRelationship.relationship_type == "USES"
             ).all()
                 
-            for outcome in outcomes:
-                sol  = CoachAgentSolution(
-                    strategy=strategy.description, 
-                    technique=technique.description,
-                    outcome=outcome.description)
-                solution_analysis.analysis.append(sol)
+            for technique in techniques:
+                # Find outcomes for the technique
+                outcomes = session.query(DatabaseEntity).join(
+                    DatabaseRelationship,
+                    DatabaseRelationship.target_entity_id == DatabaseEntity.id
+                ).filter(
+                    DatabaseRelationship.source_entity_id == technique.id,
+                    DatabaseRelationship.relationship_type == "RESULTS_IN"
+                ).all()
+                    
+                for outcome in outcomes:
+                    sol  = CoachAgentSolution(
+                        strategy=strategy.description, 
+                        technique=technique.description,
+                        outcome=outcome.description)
+                    solution_analysis.analysis.append(sol)
       
-    return solution_analysis
+        return solution_analysis
 

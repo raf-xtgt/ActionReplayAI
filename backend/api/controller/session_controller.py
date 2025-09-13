@@ -226,7 +226,7 @@ def handle_msg():
         coach_agent_risk_analysis = CoachAgentRiskAnalysis(**risks_data)
         print("risks", coach_agent_risk_analysis)
         coach_agent_problem_analysis = CoachAgentProblemAnalysis(
-            behavoral=coach_agent_behavioral_analysis,
+            behavioral=coach_agent_behavioral_analysis,
             risk=coach_agent_risk_analysis)
         coach_solution = coach_agent.get_solution_techniques(coach_agent_problem_analysis)
 
