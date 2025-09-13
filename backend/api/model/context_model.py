@@ -23,3 +23,23 @@ class ConversationAnalysis(BaseModel):
     risks: Optional[List[str]] = Field(description="Unaddressed objections and consequential objections.")
     techniques: Optional[List[str]] = Field(description="Techniques available from the session cache to address the risks.")
     alternative_paths: Optional[List[str]] = Field(description="Alternative conversation paths to address client objections.")
+
+
+class BehavioralCue(BaseModel):
+    cue_name: str
+    evidence_quote: str
+    interpretation: str 
+    impact_probability: str
+
+class CoachAgentBehavioralCueAnalysis(BaseModel):
+    behavioral_cues: List[BehavioralCue]
+
+
+class Risk(BaseModel):
+    description: str
+    impact: str
+    impact_level: str 
+    
+class CoachAgentRiskAnalysis(BaseModel):
+    risks: List[Risk]
+

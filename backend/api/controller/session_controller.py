@@ -10,7 +10,7 @@ from model.data_model import (
 )
 from util.session_service import ( update_session_cache, create_new_session, get_session_by_id, update_session_by_id )
 from util.db_service import (get_client_profile, get_client_objections, get_client_with_detailed_objections)
-from model.context_model import ( ClientAgentContextModel, SessionModel )
+from model.context_model import ( ClientAgentContextModel, SessionModel, CoachAgentBehavioralCueAnalysis,CoachAgentRiskAnalysis )
 from agent import (ClientAgent, CoachAgent)
 from util.knowledge_graph import ( DatabaseEntity, DatabaseRelationship, get_query_embedding )
 from sqlalchemy import (
@@ -215,9 +215,13 @@ def handle_msg():
     if user_response_classification == 'substantive':
         print("Classification", user_response_classification)
         cues = coach_agent.extract_behavioral_queue(client_agent_context) 
-        print("cues", cues)
+        behavioral_data = json.loads(cues)
+        coach_agent_behavioral_analysis = CoachAgentBehavioralCueAnalysis(**behavioral_data)
+        print("cues", coach_agent_behavioral_analysis)
         risks = coach_agent.extract_risks(client_agent_context) 
-        print("risks", risks)
+        risks_data = json.loads(risks)
+        coach_agent_risk_analysis = CoachAgentRiskAnalysis(**risks_data)
+        print("risks", coach_agent_risk_analysis)
 
 
     return jsonify({
