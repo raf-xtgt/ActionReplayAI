@@ -105,48 +105,48 @@ def get_coach_agent_behavioral_cue_prompt(client_agent_context: ClientAgentConte
 
 def get_coach_agent_risk_prompt(client_agent_context: ClientAgentContextModel):
     base_prompt = """ 
-    You are an expert sales coach analyzing a role-play conversation between a sales representative (the User) and an AI simulating a client profile. Your task is to analyze the client's most recent response for behavioral cues and emotional subtext. Your analysis must be evidence-based, concise, and structured for automated processing
+    You are an expert sales coach analyzing a role-play conversation between a sales representative (the User) and an AI simulating a client profile. Your task is to identify potential risks based on unaddressed objections and consequential objections from the knowledge graph. Use the provided session cache to guide your analysis.    
     Instructions:
 
-        1. Analyze the provided conversation_history up to the latest turn.
+        1. Review the conversation_history to determine which objections have been fully addressed, partially addressed, or remain unaddressed by the user's responses.
 
-        2. Focus primarily on the Client's last message for behavioral cues.
+        2. Focus on the current_objection and the list_of_related_objections from the session cache. These related objections are pre-defined and relevant to the client profile.
 
-        3.For each identified cue:
+        3. Identify up to 3 key risks that could derail the sale. Risks should include:
 
-            Name it using standard sales psychology terminology (e.g., "Skepticism," "Frustration," "Interest," "Urgency").
+            Unaddressed objections: Objections from the related list that have not been adequately handled in the conversation.
 
-            Provide a direct quote from the client's dialogue that exemplifies the cue. This is mandatory.
+            Consequential objections: Objections that may arise next based on the client's behavior or the current objection's context.
 
-            Interpret the cue's meaning in the context of the sales conversation.
+        4. For each risk, assign an impact level (High, Medium, Low) based on how critical it is to the sale's success. Consider:
 
-            Estimate the probability (as a percentage) of a specific positive or negative outcome stemming from this cue (e.g., "70% chance of disengagement," "60% chance of being open to a demo").
+            High impact: Likely to cause immediate disengagement or deal loss.
 
-        4.Limit your output to a maximum of 3 cues. Select the most impactful and relevant ones.
+            Medium impact: Could hinder progress or require significant effort to overcome.
+
+            Low impact: Minor issues that might be easily resolved but still need attention.
 
         5.Output Format: You MUST output a valid, parsable JSON object matching the exact structure below.
         ```
         {
-            "behavioral_cues": [
+            "risks": [
                 {
-                "cue_name": "e.g., Price Sensitivity",
-                "evidence_quote": "The direct quote from the client's message",
-                "interpretation": "Brief analysis of what this cue means for the sale",
-                "impact_probability": "e.g., 70% chance of disengagement if unaddressed"
+                "description": "A short 1-line description of the risk",
+                "impact": "A short 1-line description of the impact of the risk",
+                "impact_level": "How severe is the risk - High, Moderate, Trivial",
                 }
             ]
         }
         ```
     """
     context_prompt = f"""\n 
-    Conversation History for Analysis:
-    {client_agent_context.conversation_history}
-
-    Current Session Context:
-    Client Profile: {client_agent_context.profile_desc}
-    Core Objection: {client_agent_context.current_objection}
+    Context:
+    Conversation history: {client_agent_context.conversation_history}
+    Current_objection: {client_agent_context.current_objection}
+    List of related objections: {client_agent_context.related_objections} (This is a list of objection names or descriptions from the session cache)
+    Begin your analysis. Output only the formatted list.
     """
 
-    coach_agent_behavioral_cue_prompt = base_prompt + context_prompt
-    return coach_agent_behavioral_cue_prompt
+    coach_agent_risk_prompt = base_prompt + context_prompt
+    return coach_agent_risk_prompt
 

@@ -216,11 +216,14 @@ def handle_msg():
         print("Classification", user_response_classification)
         cues = coach_agent.extract_behavioral_queue(client_agent_context) 
         print("cues", cues)
+        risks = coach_agent.extract_risks(client_agent_context) 
+        print("risks", risks)
 
 
     return jsonify({
         "session_id": session_id,
         "client_agent_response": client_agent_context.conversation_history[lates_client_response_idx],
         "client_response_classification": user_response_classification,
-        "behavioral":cues
+        "behavioral":cues,
+        "risks":risks
     })
