@@ -139,23 +139,22 @@ def get_client_with_detailed_objections(client_profile_id):
             "related_objections": related_objs
         }
 
-def get_solutions_to_objections(analysis: CoachAgentProblemAnalysis):
+def get_solutions_to_objections(problem_analysis: CoachAgentProblemAnalysis, solution_analysis: CoachAgentSolutionAnalysis):
     with SessionLocal() as session:
         # Extract risk descriptions
-        risk_analysis = analysis.risk
+        risk_analysis = problem_analysis.risk
         risk_descriptions = [risk.description for risk in risk_analysis.risks]
         risk_query_text = " ".join(risk_descriptions)
         risk_strategies = get_strategies(risk_query_text)
 
-        behavioral_analysis = analysis.behavioral
+        behavioral_analysis = problem_analysis.behavioral
         behavioral_descriptions = [b.interpretation for b in behavioral_analysis.behavioral_cues]
         bhv_query_text = " ".join(behavioral_descriptions)
         bhv_strategies = get_strategies(bhv_query_text)
         
-        risk_solutions = get_solutions(risk_strategies)
-        bhv_solutions = get_solutions(bhv_strategies)
-        solutions = list(set(risk_solutions + bhv_solutions))
-        return solutions
+        risk_solutions = get_solutions(risk_strategies, solution_analysis)
+        bhv_solutions = get_solutions(bhv_strategies, solution_analysis)
+        return solution_analysis
 
 def get_strategies(query_text):
     with SessionLocal() as session:
@@ -182,8 +181,7 @@ def get_strategies(query_text):
         unique_strategies.update({s.id: s for s in bm25_results})
         return unique_strategies
 
-def get_solutions(unique_strategies):
-    solution_analysis = CoachAgentSolutionAnalysis(analysis=[])
+def get_solutions(unique_strategies, solution_analysis):
     with SessionLocal() as session:
         for strategy in unique_strategies.values():
             # Find techniques for the strategy

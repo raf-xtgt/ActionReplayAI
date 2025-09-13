@@ -12,7 +12,7 @@ from util.session_service import ( update_session_cache, create_new_session, get
 from util.db_service import (get_client_profile, get_client_objections, get_client_with_detailed_objections)
 from model.context_model import ( 
     ClientAgentContextModel, SessionModel, CoachAgentBehavioralCueAnalysis, 
-    CoachAgentRiskAnalysis, CoachAgentProblemAnalysis
+    CoachAgentRiskAnalysis, CoachAgentProblemAnalysis, CoachAgentSolutionAnalysis
 )
 from agent import (ClientAgent, CoachAgent)
 from util.knowledge_graph import ( DatabaseEntity, DatabaseRelationship, get_query_embedding )
@@ -214,6 +214,7 @@ def handle_msg():
     # Trigger coach agent
     coach_agent = CoachAgent()
     user_response_classification = coach_agent.classify_response(client_agent_context)
+    solution_analysis = CoachAgentSolutionAnalysis(analysis=[])
 
     if user_response_classification == 'substantive':
         print("Classification", user_response_classification)
@@ -228,8 +229,8 @@ def handle_msg():
         coach_agent_problem_analysis = CoachAgentProblemAnalysis(
             behavioral=coach_agent_behavioral_analysis,
             risk=coach_agent_risk_analysis)
-        coach_solution = coach_agent.get_solution_techniques(coach_agent_problem_analysis)
-
+        coach_solution = coach_agent.get_solution_techniques(coach_agent_problem_analysis, solution_analysis)
+        print("coach_solution", coach_solution)
 
     return jsonify({
         "session_id": session_id,
