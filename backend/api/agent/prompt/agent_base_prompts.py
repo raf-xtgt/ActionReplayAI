@@ -52,3 +52,51 @@ def get_latest_salesman_response(conversation_history):
         if msg["role"] == "salesman":
             return msg["content"]
     return None  # In case no salesman response exists
+
+
+def get_coach_agent_behavioral_cue_prompt(client_agent_context: ClientAgentContextModel):
+    base_prompt = """ 
+    You are an expert sales coach analyzing a role-play conversation between a sales representative (the User) and an AI simulating a client profile. Your task is to analyze the client's most recent response for behavioral cues and emotional subtext. Your analysis must be evidence-based, concise, and structured for automated processing
+    Instructions:
+
+        1. Analyze the provided conversation_history up to the latest turn.
+
+        2. Focus primarily on the Client's last message for behavioral cues.
+
+        3.For each identified cue:
+
+            Name it using standard sales psychology terminology (e.g., "Skepticism," "Frustration," "Interest," "Urgency").
+
+            Provide a direct quote from the client's dialogue that exemplifies the cue. This is mandatory.
+
+            Interpret the cue's meaning in the context of the sales conversation.
+
+            Estimate the probability (as a percentage) of a specific positive or negative outcome stemming from this cue (e.g., "70% chance of disengagement," "60% chance of being open to a demo").
+
+        4.Limit your output to a maximum of 3 cues. Select the most impactful and relevant ones.
+
+        5.Output Format: You MUST output a valid, parsable JSON object matching the exact structure below.
+        ```
+        {
+            "behavioral_cues": [
+                {
+                "cue_name": "e.g., Price Sensitivity",
+                "evidence_quote": "The direct quote from the client's message",
+                "interpretation": "Brief analysis of what this cue means for the sale",
+                "impact_probability": "e.g., 70% chance of disengagement if unaddressed"
+                }
+            ]
+        }
+        ```
+    """
+    context_prompt = f"""\n 
+    Conversation History for Analysis:
+    {client_agent_context.conversation_history}
+
+    Current Session Context:
+    Client Profile: {client_agent_context.profile_desc}
+    Core Objection: {client_agent_context.current_objection}
+    """
+
+    coach_agent_behavioral_cue_prompt = base_prompt + context_prompt
+    return coach_agent_behavioral_cue_prompt

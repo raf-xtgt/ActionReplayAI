@@ -2,9 +2,10 @@ import dspy
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from model.context_model import ( ConversationAnalysis, ClientAgentContextModel )
-from .prompt import (get_coach_agent_classification_prompt)
+from .prompt import (get_coach_agent_classification_prompt, get_coach_agent_behavioral_cue_prompt)
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 from util.inference_service import ( get_llm_output )
+import json
 
 class CoachAgentSignature(dspy.Signature):
     """Analyzes the conversation and provides feedback to the user."""
@@ -32,7 +33,7 @@ class CoachAgent:
     def __init__(self):
         self.classification = ""
 
-    def forward(self, client_agent_context: ClientAgentContextModel):
+    def classify_response(self, client_agent_context: ClientAgentContextModel):
         classification_prompt = get_coach_agent_classification_prompt(client_agent_context)
         classification_output = ""
         print("coach classification start")
@@ -48,3 +49,20 @@ class CoachAgent:
 
         # Add client response to history
         return classification_output
+
+    def extract_behavioral_queue(self, client_agent_context: ClientAgentContextModel):
+        behavioral_cue_prompt = get_coach_agent_behavioral_cue_prompt(client_agent_context)
+        output = ""
+        print("CoachAgent-behavioral cues start")
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(get_llm_output, behavioral_cue_prompt)
+            try:
+                output = future.result(timeout=45)
+                print("response", json.dumps(output, indent=2, default=str))
+            except FutureTimeoutError:
+                return "Prediction timed out after 45 seconds"
+            except Exception as e:
+                return f"Error during prediction: {e}"
+
+        # Add client response to history
+        return output

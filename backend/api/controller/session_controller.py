@@ -210,13 +210,17 @@ def handle_msg():
 
     # Trigger coach agent
     coach_agent = CoachAgent()
-    client_response_classification = coach_agent.forward(client_agent_context)
+    user_response_classification = coach_agent.classify_response(client_agent_context)
 
-
+    if user_response_classification == 'substantive':
+        print("Classification", user_response_classification)
+        cues = coach_agent.extract_behavioral_queue(client_agent_context) 
+        print("cues", cues)
 
 
     return jsonify({
         "session_id": session_id,
         "client_agent_response": client_agent_context.conversation_history[lates_client_response_idx],
-        "client_response_classification": client_response_classification
+        "client_response_classification": user_response_classification,
+        "behavioral":cues
     })
