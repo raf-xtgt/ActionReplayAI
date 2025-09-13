@@ -197,7 +197,7 @@ def handle_msg():
         return jsonify({"error": "Session not found"}), 404
     
     session_data = get_session_by_id(session_id)
-    print("retrieved session data:::", json.dumps(session_data, indent=2, default=str) )
+    # print("retrieved session data:::", json.dumps(session_data, indent=2, default=str) )
 
     client_agent_context = session_data.client_agent_context
     client_agent_context.conversation_history.append({"role": "salesman", "content": user_response})

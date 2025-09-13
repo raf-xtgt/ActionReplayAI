@@ -8,28 +8,6 @@ from util.inference_service import ( get_llm_output )
 from util.db_service import (get_solutions_to_objections)
 import json
 
-class CoachAgentSignature(dspy.Signature):
-    """Analyzes the conversation and provides feedback to the user."""
-
-    conversation_history: str = dspy.InputField(desc="The history of the conversation so far.")
-    user_response: str = dspy.InputField(desc="The user's latest response.")
-    session_cache: str = dspy.InputField(desc="The session cache, containing relevant information.")
-    analysis: ConversationAnalysis = dspy.OutputField(desc="The analysis of the conversation.")
-
-class UserResponseClassificationSignature(dspy.Signature):
-    """Classify the user's response as 'substantive' or 'minor'."""
-    conversation_history: str = dspy.InputField(desc="The history of the conversation so far.")
-    user_response: str = dspy.InputField(desc="The user's latest response.")
-    classification: str = dspy.OutputField(desc="Either 'substantive' or 'minor'.")
-
-class SubstantiveAnalysisSignature(dspy.Signature):
-    """Analyzes a substantive user response and provides a detailed report."""
-    conversation_history: str = dspy.InputField(desc="The history of the conversation so far.")
-    session_cache: str = dspy.InputField(desc="The session cache, containing relevant information.")
-    behavioral_cues: List[str] = dspy.OutputField(desc="List of identified behavioral cues, from strongest to weakest.")
-    risks: List[str] = dspy.OutputField(desc="Unaddressed objections and consequential objections.")
-    techniques: List[str] = dspy.OutputField(desc="Techniques available from the session cache to address the risks.")
-
 class CoachAgent:
     def __init__(self):
         self.classification = ""
@@ -42,7 +20,7 @@ class CoachAgent:
             future = executor.submit(get_llm_output, classification_prompt)
             try:
                 classification_output = future.result(timeout=45)
-                print("coach agent classification response", classification_output)
+                # print("coach agent classification response", classification_output)
             except FutureTimeoutError:
                 return "Prediction timed out after 45 seconds"
             except Exception as e:
@@ -86,6 +64,13 @@ class CoachAgent:
         return output
 
     def get_solution_techniques(self, coach_agent_problem_analysis: CoachAgentProblemAnalysis, coach_solution_analysis: CoachAgentSolutionAnalysis):
+        print("CoachAgent-solution retrieval start")
+        sol_techinques = get_solutions_to_objections(coach_agent_problem_analysis, coach_solution_analysis)
+        print(sol_techinques)
+        return sol_techinques
+
+    def generate_report(self, coach_agent_problem_analysis: CoachAgentProblemAnalysis, 
+                        coach_solution_analysis: CoachAgentSolutionAnalysis, client_agent_context: ClientAgentContextModel):
         print("CoachAgent-solution retrieval start")
         sol_techinques = get_solutions_to_objections(coach_agent_problem_analysis, coach_solution_analysis)
         print(sol_techinques)
