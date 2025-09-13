@@ -43,3 +43,17 @@ class Risk(BaseModel):
 class CoachAgentRiskAnalysis(BaseModel):
     risks: List[Risk]
 
+
+class CoachAgentProblemAnalysis(BaseModel):
+    behavioral: CoachAgentBehavioralCueAnalysis
+    risk: CoachAgentRiskAnalysis
+
+
+class CoachAgentSolution(BaseModel):
+    strategy: str
+    technique: str
+    outcome: str 
+
+
+class CoachAgentSolutionAnalysis(BaseModel):
+    analysis: List[CoachAgentSolution]

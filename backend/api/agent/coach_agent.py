@@ -1,10 +1,11 @@
 import dspy
 from pydantic import BaseModel, Field
 from typing import List, Optional
-from model.context_model import ( ConversationAnalysis, ClientAgentContextModel )
+from model.context_model import ( ConversationAnalysis, ClientAgentContextModel, CoachAgentProblemAnalysis )
 from .prompt import (get_coach_agent_classification_prompt, get_coach_agent_behavioral_cue_prompt, get_coach_agent_risk_prompt)
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 from util.inference_service import ( get_llm_output )
+from util.db_service import (get_solutions_to_objections)
 import json
 
 class CoachAgentSignature(dspy.Signature):
@@ -58,7 +59,7 @@ class CoachAgent:
             future = executor.submit(get_llm_output, behavioral_cue_prompt)
             try:
                 output = future.result(timeout=45)
-                print("response", json.dumps(output, indent=2, default=str))
+                # print("response", json.dumps(output, indent=2, default=str))
             except FutureTimeoutError:
                 return "Prediction timed out after 45 seconds"
             except Exception as e:
@@ -75,7 +76,7 @@ class CoachAgent:
             future = executor.submit(get_llm_output, risk_analysis_prompt)
             try:
                 output = future.result(timeout=45)
-                print("response", json.dumps(output, indent=2, default=str))
+                # print("response", json.dumps(output, indent=2, default=str))
             except FutureTimeoutError:
                 return "Prediction timed out after 45 seconds"
             except Exception as e:
@@ -83,3 +84,9 @@ class CoachAgent:
 
         # Add client response to history
         return output
+
+    def get_solution_techniques(self, coach_agent_problem_analysis: CoachAgentProblemAnalysis):
+        print("CoachAgent-solution retrieval start")
+        sol_techinques = get_solutions_to_objections(coach_agent_problem_analysis)
+        print(sol_techinques)
+        return sol_techinques

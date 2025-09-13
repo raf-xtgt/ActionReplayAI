@@ -10,7 +10,10 @@ from model.data_model import (
 )
 from util.session_service import ( update_session_cache, create_new_session, get_session_by_id, update_session_by_id )
 from util.db_service import (get_client_profile, get_client_objections, get_client_with_detailed_objections)
-from model.context_model import ( ClientAgentContextModel, SessionModel, CoachAgentBehavioralCueAnalysis,CoachAgentRiskAnalysis )
+from model.context_model import ( 
+    ClientAgentContextModel, SessionModel, CoachAgentBehavioralCueAnalysis, 
+    CoachAgentRiskAnalysis, CoachAgentProblemAnalysis
+)
 from agent import (ClientAgent, CoachAgent)
 from util.knowledge_graph import ( DatabaseEntity, DatabaseRelationship, get_query_embedding )
 from sqlalchemy import (
@@ -222,6 +225,10 @@ def handle_msg():
         risks_data = json.loads(risks)
         coach_agent_risk_analysis = CoachAgentRiskAnalysis(**risks_data)
         print("risks", coach_agent_risk_analysis)
+        coach_agent_problem_analysis = CoachAgentProblemAnalysis(
+            behavoral=coach_agent_behavioral_analysis,
+            risk=coach_agent_risk_analysis)
+        coach_solution = coach_agent.get_solution_techniques(coach_agent_problem_analysis)
 
 
     return jsonify({
