@@ -9,7 +9,7 @@ from model.data_model import (
     CoachAnalysis
 )
 from util.session_service import ( update_session_cache, create_new_session, get_session_by_id, update_session_by_id )
-from util.db_service import (get_client_profile, get_client_objections)
+from util.db_service import (get_client_profile, get_client_objections, get_client_with_detailed_objections)
 from model.context_model import ( ClientAgentContextModel, SessionModel )
 from agent import (ClientAgent, CoachAgent)
 from util.knowledge_graph import ( DatabaseEntity, DatabaseRelationship, get_query_embedding )
@@ -129,7 +129,7 @@ def start_session_v2():
 def construct_client_agent_context(client_profile_id, conversation_history):
     client_profile = get_client_profile(client_profile_id)
     print("Client Profile", json.dumps(client_profile, indent=2, default=str) )
-    objections = get_client_objections(client_profile_id)
+    objections = get_client_with_detailed_objections(client_profile_id)
     print("Client Objections", json.dumps(objections, indent=2, default=str) )
 
         

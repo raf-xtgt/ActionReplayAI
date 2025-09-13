@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify
 import json
 from config.tidb_config import (SessionLocal)
-from util.db_service import ( get_client_objections, get_client_profile )
+from util.db_service import ( get_client_objections, get_client_profile, get_client_with_detailed_objections )
 from util.knowledge_graph import ( DatabaseEntity )
 
 
@@ -31,4 +31,4 @@ def retrieve_client_profile(client_profile_id):
 @client_profile_bp.route('/objections/<client_profile_id>', methods=['GET'])
 def retrieve_client_profile_objections(client_profile_id):
     """Get client profile objections by ID"""
-    return jsonify(get_client_objections(client_profile_id)) 
+    return jsonify(get_client_with_detailed_objections(client_profile_id)) 

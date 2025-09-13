@@ -62,6 +62,7 @@ def get_client_objections(client_profile_id):
         
         # Perform initial searches
         objection_descriptions = [obj.description for obj in objections]
+        # print("client objections", objection_descriptions)
         initial_context = " ".join(objection_descriptions)
         
         # Embedding search
@@ -75,6 +76,57 @@ def get_client_objections(client_profile_id):
         bm25_results = session.query(DatabaseEntity).filter(
             or_(
                 DatabaseEntity.description.contains(term) for term in initial_context.split()[:5]
+            )
+        ).limit(20).all()
+        bm25_objs = [obj.description for obj in bm25_results]
+        related_objs = list(set(em_objs + bm25_objs))
+               
+        return {
+            "client_objections": objection_descriptions,
+            "related_objections": related_objs
+        }
+
+def get_client_with_detailed_objections(client_profile_id):
+    with SessionLocal() as session:
+        # Get objections for this client profile
+        client_profile = session.query(DatabaseEntity).filter(
+            DatabaseEntity.entity_id == client_profile_id,
+            DatabaseEntity.type == "ClientProfile"
+        ).first()
+        
+        if not client_profile:
+            return jsonify({"error": "Client profile not found"}), 404
+        
+        # Get related objections
+        objections = session.query(DatabaseEntity).join(
+            DatabaseRelationship,
+            DatabaseRelationship.target_entity_id == DatabaseEntity.id
+        ).filter(
+            DatabaseRelationship.source_entity_id == client_profile.id,
+            DatabaseRelationship.relationship_type == "HAS_OBJECTION"
+        ).all()
+        
+        # Perform initial searches
+        objection_descriptions = [obj.description for obj in objections]
+        # print("client objections", objection_descriptions)
+        initial_context = " ".join(objection_descriptions)
+        
+        # Embedding search
+        embedding = get_query_embedding(initial_context)
+        embedding_results = session.query(DatabaseEntity).filter(
+            DatabaseEntity.type == 'Objection'
+        ).order_by(
+            DatabaseEntity.description_vec.cosine_distance(embedding)
+        ).limit(20).all()
+        em_objs = [obj.description for obj in embedding_results]
+        
+        # BM25 search (simplified)
+        bm25_results = session.query(DatabaseEntity).filter(
+            and_(
+                DatabaseEntity.type == 'Objection',
+                or_(
+                    DatabaseEntity.description.contains(term) for term in initial_context.split()[:5]
+                )
             )
         ).limit(20).all()
         bm25_objs = [obj.description for obj in bm25_results]
